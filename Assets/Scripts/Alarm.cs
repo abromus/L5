@@ -10,7 +10,7 @@ public class Alarm : MonoBehaviour
 	private AudioSource _audio;
 	private readonly float _maxVolume = 1f;
 	private readonly float _minVolume = 0f;
-	private Coroutine _startAlarm;
+	private bool _isAlarm;
 
 	private void Start()
 	{
@@ -21,8 +21,8 @@ public class Alarm : MonoBehaviour
 	{
 		if(collision.TryGetComponent<Thief>(out _))
 		{
-			Debug.Log(0);
-			_startAlarm = StartCoroutine(StartAlarm());
+			_isAlarm = true;
+			StartCoroutine(RunAlarm());
 		}
 	}
 
@@ -30,56 +30,42 @@ public class Alarm : MonoBehaviour
 	{
 		if(collision.TryGetComponent<Thief>(out _))
 		{
-			StartCoroutine(EndAlarm());
+			_isAlarm = false;
 		}
 	}
 
-	private IEnumerator StartAlarm()
+	private IEnumerator RunAlarm()
 	{
 		float reduce = -1;
 		float increase = 1;
 		float direction = increase;
-
-		Debug.LogWarning($"Enter");
 
 		_audio.volume = _maxVolume;
 		_audio.Play();
 
 		while(true)
 		{
+			if(_isAlarm == false)
+			{
+				if(direction != reduce)
+				{
+					direction = reduce;
+				}
+
+				if(_audio.volume <= 0)
+				{
+					_audio.Stop();
+					break;
+				}
+			}
+
 			if(_audio.volume >= _maxVolume || _audio.volume <= _minVolume)
 			{
 				direction = direction == increase ? reduce : increase;
 			}
 
-			_audio.volume += direction*Time.deltaTime / _fadeTime;
+			_audio.volume += direction * Time.deltaTime / _fadeTime;
 
-			Debug.Log($"Volume: {_audio.volume}");
-			yield return null;
-		}
-	}
-
-	private IEnumerator EndAlarm()
-	{
-		Debug.LogWarning($"Exit");
-
-		if(_startAlarm != null)
-		{
-			StopCoroutine(_startAlarm);
-			_startAlarm = null;
-		}
-
-		while(true)
-		{
-			if(_audio.volume >= _maxVolume || _audio.volume <= _minVolume)
-			{
-				_audio.Stop();
-				break;
-			}
-
-			_audio.volume -= Time.deltaTime / _fadeTime;
-
-			Debug.Log($"Volume: {_audio.volume}");
 			yield return null;
 		}
 	}
